@@ -1211,26 +1211,26 @@ func (p *peerGroup) close(addr string) error {
 }
 
 func (p *peerGroup) get(ctx context.Context, addr string) (storepb.WriteableStoreClient, error) {
-	// use a RLock first to prevent blocking if we don't need to.
-	p.m.RLock()
-	c, ok := p.cache[addr]
-	p.m.RUnlock()
-	if ok {
-		return storepb.NewWriteableStoreClient(c), nil
-	}
-
-	p.m.Lock()
-	defer p.m.Unlock()
-	// Make sure that another caller hasn't created the connection since obtaining the write lock.
-	c, ok = p.cache[addr]
-	if ok {
-		return storepb.NewWriteableStoreClient(c), nil
-	}
+	//use a RLock first to prevent blocking if we don't need to.
+	//p.m.RLock()
+	//c, ok := p.cache[addr]
+	//p.m.RUnlock()
+	//if ok {
+	//	return storepb.NewWriteableStoreClient(c), nil
+	//}
+	//
+	//p.m.Lock()
+	//defer p.m.Unlock()
+	//// Make sure that another caller hasn't created the connection since obtaining the write lock.
+	//c, ok = p.cache[addr]
+	//if ok {
+	//	return storepb.NewWriteableStoreClient(c), nil
+	//}
 	conn, err := p.dialer(ctx, addr, p.dialOpts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to dial peer")
 	}
 
-	p.cache[addr] = conn
+	//p.cache[addr] = conn
 	return storepb.NewWriteableStoreClient(conn), nil
 }
