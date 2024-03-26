@@ -881,7 +881,7 @@ func (h *Handler) sendRemoteWrite(
 			// Check if peer connection is unavailable, update the peer state to avoid spamming that peer.
 			if st, ok := status.FromError(err); ok {
 				if st.Code() == codes.Unavailable {
-					h.peers.markPeerUnavailable(endpointReplica.endpoint)
+					//h.peers.markPeerUnavailable(endpointReplica.endpoint)
 				}
 			}
 		}
@@ -1355,9 +1355,9 @@ func (p *peerGroup) close(addr string) error {
 }
 
 func (p *peerGroup) getConnection(ctx context.Context, addr string) (WriteableStoreAsyncClient, error) {
-	if !p.isPeerUp(addr) {
-		return nil, errUnavailable
-	}
+	//if !p.isPeerUp(addr) {
+	//	return nil, errUnavailable
+	//}
 
 	// use a RLock first to prevent blocking if we don't need to.
 	p.m.RLock()
@@ -1376,7 +1376,7 @@ func (p *peerGroup) getConnection(ctx context.Context, addr string) (WriteableSt
 	}
 	conn, err := p.dialer(ctx, addr, p.dialOpts...)
 	if err != nil {
-		p.markPeerUnavailableUnlocked(addr)
+		//p.markPeerUnavailableUnlocked(addr)
 		dialError := errors.Wrap(err, "failed to dial peer")
 		return nil, errors.Wrap(dialError, errUnavailable.Error())
 	}
