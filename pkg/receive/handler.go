@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -854,6 +855,27 @@ func (h *Handler) sendRemoteWrite(
 	endpoint := endpointReplica.endpoint
 	cl, err := h.peers.getConnection(ctx, endpoint)
 	if err != nil {
+		level.Debug(h.logger).Log("msg", "got peer connection", "err", err, "endpoint", endpoint)
+	} else {
+		level.Debug(h.logger).Log("msg", "got peer connection", "err", "no error", "endpoint", endpoint)
+	}
+
+	host := strings.Split(endpoint, ":")
+	ips, err2 := net.LookupIP(host[0])
+	if err2 != nil {
+		level.Debug(h.logger).Log("msg", "trying to lookup ip", "err2", err2, "addr", endpoint)
+	} else {
+		var ipStrings []string
+		for _, ip := range ips {
+			ipStrings = append(ipStrings, ip.String())
+		}
+
+		// Combine all IP addresses into a single string, separated by commas.
+		allIPs := strings.Join(ipStrings, ", ")
+		level.Debug(h.logger).Log("msg", "trying to lookup ip", "ip", allIPs, "addr", endpoint)
+	}
+
+	if err != nil {
 		if errors.Is(err, errUnavailable) {
 			err = errors.Wrapf(errUnavailable, "backing off forward request for endpoint %v", endpointReplica)
 		}
@@ -865,6 +887,7 @@ func (h *Handler) sendRemoteWrite(
 	// This is called "real" because it's 1-indexed.
 	realReplicationIndex := int64(endpointReplica.replica + 1)
 	// Actually make the request against the endpoint we determined should handle these time series.
+	level.Debug(h.logger).Log("msg", "sending remote request", "endpoint", endpoint)
 	cl.RemoteWriteAsync(ctx, &storepb.WriteRequest{
 		Timeseries: trackedSeries.timeSeries,
 		Tenant:     tenant,
@@ -878,10 +901,27 @@ func (h *Handler) sendRemoteWrite(
 			}
 			h.peers.markPeerAvailable(endpoint)
 		} else {
+			host2 := strings.Split(endpoint, ":")
+			ips2, err3 := net.LookupIP(host2[0])
+			if err3 != nil {
+				level.Debug(h.logger).Log("msg", "trying to lookup ip after remote write", "err2", err3, "addr", host2[0], "remote-write-err", err)
+			} else {
+				var ipStrings2 []string
+				for _, ip := range ips2 {
+					ipStrings2 = append(ipStrings2, ip.String())
+				}
+
+				// Combine all IP addresses into a single string, separated by commas.
+				allIPs := strings.Join(ipStrings2, ", ")
+
+				level.Debug(h.logger).Log("msg", "trying to lookup ip after remote write", "ip", allIPs, "addr", host2[0], "remote-write-err", err)
+			}
 			// Check if peer connection is unavailable, update the peer state to avoid spamming that peer.
 			if st, ok := status.FromError(err); ok {
 				if st.Code() == codes.Unavailable {
-					h.peers.markPeerUnavailable(endpointReplica.endpoint)
+					//h.peers.markPeerUnavailable(endpointReplica.endpoint)
+				} else {
+					h.peers.markPeerAvailable(endpoint)
 				}
 			}
 		}
@@ -1355,9 +1395,9 @@ func (p *peerGroup) close(addr string) error {
 }
 
 func (p *peerGroup) getConnection(ctx context.Context, addr string) (WriteableStoreAsyncClient, error) {
-	if !p.isPeerUp(addr) {
-		return nil, errUnavailable
-	}
+	//if !p.isPeerUp(addr) {
+	//	return nil, errUnavailable
+	//}
 
 	// use a RLock first to prevent blocking if we don't need to.
 	p.m.RLock()
@@ -1374,9 +1414,10 @@ func (p *peerGroup) getConnection(ctx context.Context, addr string) (WriteableSt
 	if ok {
 		return c, nil
 	}
+
 	conn, err := p.dialer(ctx, addr, p.dialOpts...)
 	if err != nil {
-		p.markPeerUnavailableUnlocked(addr)
+		//p.markPeerUnavailableUnlocked(addr)
 		dialError := errors.Wrap(err, "failed to dial peer")
 		return nil, errors.Wrap(dialError, errUnavailable.Error())
 	}
