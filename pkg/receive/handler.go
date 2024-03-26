@@ -853,8 +853,12 @@ func (h *Handler) sendRemoteWrite(
 ) {
 	endpoint := endpointReplica.endpoint
 	cl, err := h.peers.getConnection(ctx, endpoint)
+	level.Debug(h.logger).Log("msg", "got peer connection", "err", err.Error(), "endpoint", endpoint)
 	if err != nil {
 		if errors.Is(err, errUnavailable) {
+			ips, err2 := net.LookupIP(endpoint)
+			level.Debug(h.logger).Log("msg", "trying to lookup ip", "err2", err2.Error(), "ip", ips, "addr", endpoint)
+
 			err = errors.Wrapf(errUnavailable, "backing off forward request for endpoint %v", endpointReplica)
 		}
 		responses <- newWriteResponse(trackedSeries.seriesIDs, err, endpointReplica)
@@ -865,6 +869,7 @@ func (h *Handler) sendRemoteWrite(
 	// This is called "real" because it's 1-indexed.
 	realReplicationIndex := int64(endpointReplica.replica + 1)
 	// Actually make the request against the endpoint we determined should handle these time series.
+	level.Debug(h.logger).Log("msg", "sending remote request", "endpoint", endpoint)
 	cl.RemoteWriteAsync(ctx, &storepb.WriteRequest{
 		Timeseries: trackedSeries.timeSeries,
 		Tenant:     tenant,
@@ -881,7 +886,9 @@ func (h *Handler) sendRemoteWrite(
 			// Check if peer connection is unavailable, update the peer state to avoid spamming that peer.
 			if st, ok := status.FromError(err); ok {
 				if st.Code() == codes.Unavailable {
-					h.peers.markPeerUnavailable(endpointReplica.endpoint)
+					//h.peers.markPeerUnavailable(endpointReplica.endpoint)
+				} else {
+					h.peers.markPeerAvailable(endpoint)
 				}
 			}
 		}
@@ -1355,9 +1362,9 @@ func (p *peerGroup) close(addr string) error {
 }
 
 func (p *peerGroup) getConnection(ctx context.Context, addr string) (WriteableStoreAsyncClient, error) {
-	if !p.isPeerUp(addr) {
-		return nil, errUnavailable
-	}
+	//if !p.isPeerUp(addr) {
+	//	return nil, errUnavailable
+	//}
 
 	// use a RLock first to prevent blocking if we don't need to.
 	p.m.RLock()
@@ -1374,9 +1381,10 @@ func (p *peerGroup) getConnection(ctx context.Context, addr string) (WriteableSt
 	if ok {
 		return c, nil
 	}
+
 	conn, err := p.dialer(ctx, addr, p.dialOpts...)
 	if err != nil {
-		p.markPeerUnavailableUnlocked(addr)
+		//p.markPeerUnavailableUnlocked(addr)
 		dialError := errors.Wrap(err, "failed to dial peer")
 		return nil, errors.Wrap(dialError, errUnavailable.Error())
 	}
