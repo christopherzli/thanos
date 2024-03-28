@@ -853,7 +853,7 @@ func (h *Handler) sendRemoteWrite(
 	wg *sync.WaitGroup,
 ) {
 	endpoint := endpointReplica.endpoint
-	cl, err := h.peers.getConnection(ctx, endpoint)
+	cl, err := h.peers.getConnection(ctx, endpoint, h.logger)
 	if err != nil {
 		level.Debug(h.logger).Log("msg", "got peer connection", "err", err, "endpoint", endpoint)
 	} else {
@@ -1329,7 +1329,7 @@ func newPeerGroup(backoff backoff.Backoff, forwardDelay prometheus.Histogram, as
 
 type peersContainer interface {
 	close(string) error
-	getConnection(context.Context, string) (WriteableStoreAsyncClient, error)
+	getConnection(context.Context, string, log.Logger) (WriteableStoreAsyncClient, error)
 	markPeerUnavailable(string)
 	markPeerAvailable(string)
 	reset()
@@ -1394,7 +1394,7 @@ func (p *peerGroup) close(addr string) error {
 	return nil
 }
 
-func (p *peerGroup) getConnection(ctx context.Context, addr string) (WriteableStoreAsyncClient, error) {
+func (p *peerGroup) getConnection(ctx context.Context, addr string, logger log.Logger) (WriteableStoreAsyncClient, error) {
 	//if !p.isPeerUp(addr) {
 	//	return nil, errUnavailable
 	//}
@@ -1416,6 +1416,7 @@ func (p *peerGroup) getConnection(ctx context.Context, addr string) (WriteableSt
 	}
 
 	conn, err := p.dialer(ctx, addr, p.dialOpts...)
+	level.Debug(logger).Log("msg", "logger connection", "connection", conn.GetState().String())
 	if err != nil {
 		//p.markPeerUnavailableUnlocked(addr)
 		dialError := errors.Wrap(err, "failed to dial peer")
