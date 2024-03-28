@@ -1400,20 +1400,20 @@ func (p *peerGroup) getConnection(ctx context.Context, addr string, logger log.L
 	//}
 
 	// use a RLock first to prevent blocking if we don't need to.
-	p.m.RLock()
-	c, ok := p.connections[addr]
-	p.m.RUnlock()
-	if ok {
-		return c, nil
-	}
+	//p.m.RLock()
+	//c, ok := p.connections[addr]
+	//p.m.RUnlock()
+	//if ok {
+	//	return c, nil
+	//}
 
-	p.m.Lock()
-	defer p.m.Unlock()
-	// Make sure that another caller hasn't created the connection since obtaining the write lock.
-	c, ok = p.connections[addr]
-	if ok {
-		return c, nil
-	}
+	//p.m.Lock()
+	//defer p.m.Unlock()
+	//// Make sure that another caller hasn't created the connection since obtaining the write lock.
+	//c, ok = p.connections[addr]
+	//if ok {
+	//	return c, nil
+	//}
 
 	conn, err := p.dialer(ctx, addr, p.dialOpts...)
 	level.Debug(logger).Log("msg", "logger connection", "connection", conn.GetState().String())
@@ -1423,8 +1423,8 @@ func (p *peerGroup) getConnection(ctx context.Context, addr string, logger log.L
 		return nil, errors.Wrap(dialError, errUnavailable.Error())
 	}
 
-	p.connections[addr] = newPeerWorker(conn, p.forwardDelay, p.asyncForwardWorkersCount)
-	return p.connections[addr], nil
+	//p.connections[addr] = newPeerWorker(conn, p.forwardDelay, p.asyncForwardWorkersCount)
+	return newPeerWorker(conn, p.forwardDelay, p.asyncForwardWorkersCount), nil
 }
 
 func (p *peerGroup) markPeerUnavailable(addr string) {
