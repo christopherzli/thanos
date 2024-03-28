@@ -912,9 +912,9 @@ func (h *Handler) sendRemoteWrite(
 				}
 
 				// Combine all IP addresses into a single string, separated by commas.
-				allIPs := strings.Join(ipStrings2, ", ")
+				allIPs2 := strings.Join(ipStrings2, ", ")
 
-				level.Debug(h.logger).Log("msg", "trying to lookup ip after remote write", "ip", allIPs, "addr", host2[0], "remote-write-err", err)
+				level.Debug(h.logger).Log("msg", "trying to lookup ip after remote write", "ip", allIPs2, "addr", host2[0], "remote-write-err", err)
 			}
 			// Check if peer connection is unavailable, update the peer state to avoid spamming that peer.
 			if st, ok := status.FromError(err); ok {
