@@ -1404,7 +1404,7 @@ func (p *peerGroup) getConnection(ctx context.Context, addr string, logger log.L
 	c, ok := p.connections[addr]
 	p.m.RUnlock()
 	if ok {
-		level.Debug(logger).Log("msg", "get connection", "connection", c.cc.GetState().String())
+		level.Debug(logger).Log("msg", "get connection", "connection", c.cc.GetState().String(), "address", addr)
 		c.cc.ResetConnectBackoff()
 		return c, nil
 	}
@@ -1414,7 +1414,7 @@ func (p *peerGroup) getConnection(ctx context.Context, addr string, logger log.L
 	// Make sure that another caller hasn't created the connection since obtaining the write lock.
 	c, ok = p.connections[addr]
 	if ok {
-		level.Debug(logger).Log("msg", "get connection", "connection", c.cc.GetState().String())
+		level.Debug(logger).Log("msg", "get connection", "connection", c.cc.GetState().String(), "address", addr)
 		c.cc.ResetConnectBackoff()
 		return c, nil
 	}
