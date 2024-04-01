@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -821,6 +822,21 @@ func (h *Handler) fanoutForward(pctx context.Context, tenant string, wreqs map[e
 				//		h.mtx.Unlock()
 				//	}
 				//}
+				host2 := strings.Split(writeTarget.endpoint, ":")
+				ips2, err3 := net.LookupIP(host2[0])
+				if err3 != nil {
+					level.Debug(h.logger).Log("msg", "trying to lookup ip after remote write error", "err2", err3, "addr", host2[0], "remote-write-err", err)
+				} else {
+					var ipStrings2 []string
+					for _, ip := range ips2 {
+						ipStrings2 = append(ipStrings2, ip.String())
+					}
+
+					// Combine all IP addresses into a single string, separated by commas.
+					allIPs2 := strings.Join(ipStrings2, ", ")
+
+					level.Debug(h.logger).Log("msg", "trying to lookup ip after remote write", "ip", allIPs2, "addr", host2[0], "remote-write-err", err)
+				}
 				werr := errors.Wrapf(err, "forwarding request to endpoint %v", writeTarget.endpoint)
 				responses <- newWriteResponse(wreqs[writeTarget].seriesIDs, werr)
 				return
