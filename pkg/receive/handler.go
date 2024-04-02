@@ -1235,7 +1235,7 @@ func (p *peerGroup) get(ctx context.Context, addr string) (storepb.WriteableStor
 	c, ok := p.cache[addr]
 	p.m.RUnlock()
 	if ok {
-		c.ResetConnectBackoff()
+		//c.ResetConnectBackoff()
 		return storepb.NewWriteableStoreClient(c), nil
 	}
 
@@ -1244,7 +1244,7 @@ func (p *peerGroup) get(ctx context.Context, addr string) (storepb.WriteableStor
 	// Make sure that another caller hasn't created the connection since obtaining the write lock.
 	c, ok = p.cache[addr]
 	if ok {
-		c.ResetConnectBackoff()
+		//c.ResetConnectBackoff()
 		return storepb.NewWriteableStoreClient(c), nil
 	}
 	conn, err := p.dialer(ctx, addr, p.dialOpts...)
