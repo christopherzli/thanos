@@ -158,7 +158,23 @@ func runReceive(
 		dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.UseCompressor(conf.compression)))
 	}
 	if receiveMode == receive.RouterOnly {
-		dialOpts = append(dialOpts, extgrpc.EndpointGroupGRPCOpts()...)
+		serviceConfig := `
+{
+  "loadBalancingPolicy":"round_robin",
+  "retryPolicy": {
+    "maxAttempts": 1,
+    "initialBackoff": "0.1s",	
+    "backoffMultiplier": 2,
+    "retryableStatusCodes": [
+  	  "UNAVAILABLE"
+    ]
+  }
+}`
+
+		optss := []grpc.DialOption{
+			grpc.WithDefaultServiceConfig(serviceConfig),
+		}
+		dialOpts = append(dialOpts, optss...)
 	}
 
 	var bkt objstore.Bucket
